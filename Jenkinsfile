@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        TOMCAT_VERSION = "9.0.21"
-        TOMCAT_HOME = "/home/ec2-user/apache-tomcat-9"
+        TOMCAT_HOME = "/home/ec2-user/apache-tomcat-7"
         WAR_FILE = "target/NumberGuessGame.war"
     }
 
@@ -29,14 +28,13 @@ pipeline {
                     echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17
 
-                    echo "Downloading Tomcat..."
+                    echo "Downloading Tomcat 7.0.94..."
                     cd /tmp
-                    sudo wget -q https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz  
+                    sudo wget -q https://archive.apache.org/dist/tomcat/tomcat-7/v7.0.94/bin/apache-tomcat-7.0.94.tar.gz
 
                     echo "Extracting Tomcat..."
                     sudo mkdir -p ${TOMCAT_HOME}
-                    sudo tar -xvzf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
-                    sudo chmod +x ${TOMCAT_HOME}/bin/*.sh
+                    sudo tar xvf apache-tomcat-7.0.94.tar.gz -C ${TOMCAT_HOME} --strip-components=1
 
                     echo "Stopping any existing Tomcat instance..."
                     sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
@@ -45,7 +43,7 @@ pipeline {
                     sudo rm -rf ${TOMCAT_HOME}/webapps/ROOT*
                     sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
 
-                    echo "Restarting Tomcat..."
+                    echo "Starting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
                     '''
                 }
