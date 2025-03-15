@@ -57,7 +57,7 @@ pipeline {
                     sh '''
                     # Move WAR file to Tomcat webapps directory
                     echo "Moving WAR file to Tomcat webapps directory"
-                    mv target/*.war ${WAR_DIRECTORY}/
+                    sudo mv target/*.war ${WAR_DIRECTORY}/
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
