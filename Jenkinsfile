@@ -55,7 +55,7 @@ pipeline {
                     # Move WAR file to Tomcat webapps directory
                     echo "Moving WAR file to Tomcat webapps directory"
                     # Change ownership of Tomcat webapps directory to Jenkins user
-                    sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
+                    sudo chown -R Jenkins:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
                     mv target/*.war ${WAR_DIRECTORY}/
 
                     # Start Tomcat again
