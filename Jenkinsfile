@@ -43,8 +43,13 @@ pipeline {
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
 
                     echo "Stopping any existing Tomcat instance..."
-                    # Try to stop Tomcat, but continue if it's not running
-                    sudo ${TOMCAT_HOME}/bin/shutdown.sh || echo "Tomcat is not running, proceeding with deployment."
+                    # Check if Tomcat is running and stop it, otherwise proceed
+                    if pgrep -f "org.apache.catalina.startup.Bootstrap" > /dev/null; then
+                        echo "Tomcat is running, stopping it..."
+                        sudo ${TOMCAT_HOME}/bin/shutdown.sh || echo "Failed to stop Tomcat, proceeding with deployment."
+                    else
+                        echo "Tomcat is not running, proceeding with deployment."
+                    fi
 
                     echo "Deploying WAR file..."
                     if [ -f "target/*.war" ]; then
@@ -68,7 +73,7 @@ pipeline {
                     sh '''
                     # Stop Tomcat if it's running
                     sudo ${TOMCAT_HOME}/bin/shutdown.sh || echo "Tomcat is not running, proceeding with deployment."
-                    
+
                     # Move WAR file to Tomcat webapps directory
                     if [ -f "target/*.war" ]; then
                         sudo mv target/*.war ${WAR_DIRECTORY}/
