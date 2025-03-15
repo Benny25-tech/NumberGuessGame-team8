@@ -43,7 +43,7 @@ pipeline {
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
 
                     # Change ownership of Tomcat webapps directory to Jenkins user
-                    sudo chown -R jenkins:jenkins ${TOMCAT_HOME}/webapps/
+                    sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
                     '''
                 }
             }
