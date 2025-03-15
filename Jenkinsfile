@@ -4,6 +4,7 @@ pipeline {
     environment {
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-7"
         WAR_FILE = "target/NumberGuessGame.war"
+        WAR_DIRECTORY = "${TOMCAT_HOME}/webapps"
     }
 
     stages {
@@ -41,7 +42,7 @@ pipeline {
                     
                     echo "Deploying WAR file..."
                     sudo rm -rf ${TOMCAT_HOME}/webapps/ROOT*
-                    sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
+                    sudo mv ${WAR_FILE} ${WAR_DIRECTORY}/ROOT.war
 
                     echo "Starting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
@@ -57,8 +58,8 @@ pipeline {
                     # Stop Tomcat
                     sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
                     
-                    # Copy WAR file to Tomcat webapps directory
-                    sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
+                    # Move WAR file to Tomcat webapps directory
+                    sudo mv ${WAR_FILE} ${WAR_DIRECTORY}/ROOT.war
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
