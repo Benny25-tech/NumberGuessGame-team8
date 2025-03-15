@@ -20,12 +20,23 @@ pipeline {
             }
         }
 
-        stage('Deploy to Node 1') {
+        stage('Setup and Deploy on Node 1') {
             agent { label 'node1' } // Runs only on Node 1
             steps {
                 script {
                     sh '''
                     #!/bin/bash
+                    echo "Checking if Git is installed on Node 1..."
+                    if ! command -v git &> /dev/null
+                    then
+                        echo "Git not found. Installing..."
+                        sudo yum update -y
+                        sudo yum install git -y
+                    else
+                        echo "Git is already installed."
+                    fi
+                    git --version
+
                     echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17-openjdk
 
