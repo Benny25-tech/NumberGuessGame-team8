@@ -1,38 +1,22 @@
 pipeline {
-    agent any  // Runs checkout and build on Jenkins agent
+    agent any
 
     environment {
         TOMCAT_VERSION = "9.0.21"
         TOMCAT_HOME = "/opt/tomcat"
-        WAR_FILE = "/home/ec2-user/NumberGuessGame-team8/target/NumberGuessGame.war"
-        REPO_DIR = "/home/ec2-user/NumberGuessGame-team8"
+        WAR_FILE = "target/NumberGuessGame.war"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    echo "Cloning repository..."
-                    // Using Groovy's native if statement to check if the repo exists
-                    if (fileExists(REPO_DIR)) {
-                        dir(REPO_DIR) {
-                            sh 'git pull origin master'
-                        }
-                    } else {
-                        sh "git clone https://github.com/Benny25-tech/NumberGuessGame-team8.git ${REPO_DIR}"
-                    }
-                }
+                git 'https://github.com/Benny25-tech/NumberGuessGame-team8.git'
             }
         }
 
         stage('Build with Maven') {
             steps {
-                script {
-                    sh '''
-                    cd ${REPO_DIR}
-                    mvn clean package
-                    '''
-                }
+                sh 'mvn clean package'
             }
         }
 
@@ -62,6 +46,23 @@ pipeline {
                     sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
 
                     echo "Restarting Tomcat..."
+                    sudo ${TOMCAT_HOME}/bin/startup.sh
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                script {
+                    sh '''
+                    # Stop Tomcat
+                    sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
+                    
+                    # Copy WAR file to Tomcat webapps directory
+                    sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
+
+                    # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
                     '''
                 }
