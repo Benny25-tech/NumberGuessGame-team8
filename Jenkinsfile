@@ -20,19 +20,32 @@ pipeline {
             }
         }
 
-        stage('Setup and Deploy on Node 1') {
-            agent { label 'node1' } // Runs only on Node 1
+        stage('Install Git on Node 1') {
+            agent { label 'node1' }  // Runs only on Node 1
             steps {
                 script {
                     sh '''
-                    #!/bin/bash
-                    echo "Installing Git on Node 1..."
-                    sudo yum -y install git   # For CentOS/RHEL-based systems
-                    # sudo apt-get install git  # Uncomment if on Ubuntu/Debian
+                    # Check if Git is installed
+                    if ! command -v git &> /dev/null
+                    then
+                        echo "Git not found, installing Git..."
+                        # For CentOS/RHEL-based systems
+                        sudo yum -y install git
+                        # For Ubuntu/Debian-based systems
+                        # sudo apt-get install git -y
+                    else
+                        echo "Git is already installed"
+                    fi
+                    '''
+                }
+            }
+        }
 
-                    # Verify Git installation
-                    git --version
-
+        stage('Setup and Deploy on Node 1') {
+            agent { label 'node1' }  // Runs only on Node 1
+            steps {
+                script {
+                    sh '''
                     echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17-openjdk
 
@@ -60,6 +73,7 @@ pipeline {
         }
 
         stage('Deploy to Tomcat') {
+            agent { label 'node1' }
             steps {
                 script {
                     sh '''
