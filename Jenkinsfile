@@ -13,9 +13,11 @@ pipeline {
             steps {
                 script {
                     echo "Cloning repository..."
-                    if ([ -d "${REPO_DIR}" ]) {
-                        cd ${REPO_DIR}
-                        sh 'git pull origin master'
+                    // Using Groovy's native if statement to check if the repo exists
+                    if (fileExists(REPO_DIR)) {
+                        dir(REPO_DIR) {
+                            sh 'git pull origin master'
+                        }
                     } else {
                         sh "git clone https://github.com/Benny25-tech/NumberGuessGame-team8.git ${REPO_DIR}"
                     }
