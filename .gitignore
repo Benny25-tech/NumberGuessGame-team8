@@ -1,0 +1,37 @@
+# Ignore Maven build output
+/target/
+
+# Ignore Eclipse IDE settings
+/.settings/
+/.classpath
+/.project
+/.vscode/
+
+# Ignore IntelliJ IDEA project files
+.idea/
+/*.iml
+
+# Ignore temporary files created by the OS
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore user-specific Maven configuration
+.settings/
+
+# Ignore local repository files
+.m2/repository/
+
+# Ignore Maven wrapper files if using them
+/mvnw
+/mvnw.cmd
+
+# Ignore Java build artifacts
+*.class
+*.jar
+*.war
+
+# Ignore test output files
+/target/test-classes/
