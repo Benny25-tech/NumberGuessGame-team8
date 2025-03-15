@@ -12,27 +12,13 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 script {
-                    sh '''
-                    echo "Checking if Git is installed on Node 1..."
-                    if ! command -v git &> /dev/null
-                    then
-                        echo "Git not found. Installing..."
-                        sudo yum update -y
-                        sudo yum install git -y
-                    else
-                        echo "Git is already installed."
-                    fi
-                    git --version
-                    
-                    echo "Cloning Repository..."
-                    if [ -d "${REPO_DIR}" ]; then
+                    echo "Cloning repository..."
+                    if ([ -d "${REPO_DIR}" ]) {
                         cd ${REPO_DIR}
-                        git pull origin master
-                    else
-                        git clone https://github.com/Benny25-tech/NumberGuessGame-team8.git ${REPO_DIR}
-                    fi
-                    cd ${REPO_DIR}
-                    '''
+                        sh 'git pull origin master'
+                    } else {
+                        sh "git clone https://github.com/Benny25-tech/NumberGuessGame-team8.git ${REPO_DIR}"
+                    }
                 }
             }
         }
