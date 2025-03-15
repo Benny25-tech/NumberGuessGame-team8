@@ -41,6 +41,9 @@ pipeline {
                     echo "Extracting Tomcat..."
                     sudo mkdir -p ${TOMCAT_HOME}
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
+
+                    # Change ownership of Tomcat webapps directory to Jenkins user
+                    sudo chown -R jenkins:jenkins ${TOMCAT_HOME}/webapps/
                     '''
                 }
             }
@@ -53,7 +56,8 @@ pipeline {
 
                     sh '''
                     # Move WAR file to Tomcat webapps directory
-                    sudo mv target/*.war ${WAR_DIRECTORY}/
+                    echo "Moving WAR file to Tomcat webapps directory"
+                    mv target/*.war ${WAR_DIRECTORY}/
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
