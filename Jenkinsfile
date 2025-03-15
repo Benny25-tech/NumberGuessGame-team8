@@ -26,6 +26,13 @@ pipeline {
                 script {
                     sh '''
                     #!/bin/bash
+                    echo "Installing Git on Node 1..."
+                    sudo yum -y install git   # For CentOS/RHEL-based systems
+                    # sudo apt-get install git  # Uncomment if on Ubuntu/Debian
+
+                    # Verify Git installation
+                    git --version
+
                     echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17-openjdk
 
