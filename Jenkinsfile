@@ -41,10 +41,7 @@ pipeline {
                     echo "Extracting Tomcat..."
                     sudo mkdir -p ${TOMCAT_HOME}
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
-
-                    # Change ownership of Tomcat webapps directory to Jenkins user
-                    sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
-                    '''
+                    sh'''
                 }
             }
         }
@@ -57,7 +54,9 @@ pipeline {
                     sh '''
                     # Move WAR file to Tomcat webapps directory
                     echo "Moving WAR file to Tomcat webapps directory"
-                    sudo mv target/*.war ${WAR_DIRECTORY}/
+                    # Change ownership of Tomcat webapps directory to Jenkins user
+                    sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
+                    mv target/*.war ${WAR_DIRECTORY}/
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
