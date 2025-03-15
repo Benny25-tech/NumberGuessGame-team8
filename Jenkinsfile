@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-7"
-        WAR_FILE = "target/NumberGuessGame.war"
         WAR_DIRECTORY = "${TOMCAT_HOME}/webapps"
     }
 
@@ -17,11 +16,12 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 sh 'mvn clean package'
+                sh 'ls target/*.war'  // Ensure the WAR file is created
             }
         }
 
         stage('Setup and Deploy on Node 1') {
-            agent { label 'node1' } // Runs only on Node 1
+            agent { label 'node1' }
             steps {
                 script {
                     sh '''
@@ -41,8 +41,13 @@ pipeline {
                     sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
                     
                     echo "Deploying WAR file..."
-                    sudo rm -rf ${TOMCAT_HOME}/webapps/ROOT*
-                    sudo mv ${WAR_FILE} ${WAR_DIRECTORY}/ROOT.war
+                    if [ -f "target/*.war" ]; then
+                        sudo rm -rf ${TOMCAT_HOME}/webapps/ROOT*
+                        sudo mv target/*.war ${WAR_DIRECTORY}/ROOT.war
+                    else
+                        echo "WAR file not found!"
+                        exit 1
+                    fi
 
                     echo "Starting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
@@ -59,7 +64,12 @@ pipeline {
                     sudo ${TOMCAT_HOME}/bin/shutdown.sh || true
                     
                     # Move WAR file to Tomcat webapps directory
-                    sudo mv ${WAR_FILE} ${WAR_DIRECTORY}/ROOT.war
+                    if [ -f "target/*.war" ]; then
+                        sudo mv target/*.war ${WAR_DIRECTORY}/ROOT.war
+                    else
+                        echo "WAR file not found!"
+                        exit 1
+                    fi
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
