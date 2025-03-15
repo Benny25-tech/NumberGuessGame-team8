@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         TOMCAT_VERSION = "9.0.21"
-        TOMCAT_HOME = "/opt/tomcat"
+        TOMCAT_HOME = "/home/ec2-user/apache-tomcat-9"
         WAR_FILE = "target/NumberGuessGame.war"
     }
 
@@ -27,7 +27,7 @@ pipeline {
                     sh '''
                     #!/bin/bash
                     echo "Installing Java 17 on Node 1..."
-                    sudo yum -y install java-17-openjdk
+                    sudo yum -y install java-17
 
                     echo "Downloading Tomcat..."
                     cd /tmp
