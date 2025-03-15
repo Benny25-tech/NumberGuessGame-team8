@@ -19,7 +19,7 @@ pipeline {
                 script {
                     // Run Maven build and ensure WAR file is created
                     sh 'mvn clean package'
-                    sh 'ls target/*.war' // Ensure the WAR file is created and exists
+                    stash name: 'warFile', includes: 'target/*.war' // Stash the WAR file for later use
                 }
             }
         }
@@ -41,27 +41,6 @@ pipeline {
                     echo "Extracting Tomcat..."
                     sudo mkdir -p ${TOMCAT_HOME}
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
-
-                    echo "Stopping any existing Tomcat instance..."
-                    # Check if Tomcat is running and stop it, otherwise proceed
-                    if pgrep -f "org.apache.catalina.startup.Bootstrap" > /dev/null; then
-                        echo "Tomcat is running, stopping it..."
-                        sudo ${TOMCAT_HOME}/bin/shutdown.sh || echo "Failed to stop Tomcat, proceeding with deployment."
-                    else
-                        echo "Tomcat is not running, proceeding with deployment."
-                    fi
-
-                    echo "Deploying WAR file..."
-                    if [ -f "target/*.war" ]; then
-                        sudo rm -rf ${TOMCAT_HOME}/webapps/*
-                        sudo mv target/*.war ${WAR_DIRECTORY}/
-                    else
-                        echo "WAR file not found!"
-                        exit 1
-                    fi
-
-                    echo "Starting Tomcat..."
-                    sudo ${TOMCAT_HOME}/bin/startup.sh
                     '''
                 }
             }
@@ -70,17 +49,11 @@ pipeline {
         stage('Deploy to Tomcat') {
             steps {
                 script {
-                    sh '''
-                    # Stop Tomcat if it's running
-                    sudo ${TOMCAT_HOME}/bin/shutdown.sh || echo "Tomcat is not running, proceeding with deployment."
+                    unstash 'warFile'  // Retrieve the WAR file from the stash
 
+                    sh '''
                     # Move WAR file to Tomcat webapps directory
-                    if [ -f "target/*.war" ]; then
-                        sudo mv target/*.war ${WAR_DIRECTORY}/
-                    else
-                        echo "WAR file not found!"
-                        exit 1
-                    fi
+                    sudo mv target/*.war ${WAR_DIRECTORY}/
 
                     # Start Tomcat again
                     sudo ${TOMCAT_HOME}/bin/startup.sh
