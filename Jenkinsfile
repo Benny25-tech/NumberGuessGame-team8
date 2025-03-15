@@ -4,28 +4,15 @@ pipeline {
     environment {
         TOMCAT_VERSION = "9.0.21"
         TOMCAT_HOME = "/opt/tomcat"
-        WAR_FILE = "target/NumberGuessGame.war"
+        WAR_FILE = "/home/ec2-user/NumberGuessGame-team8/target/NumberGuessGame.war"
+        REPO_DIR = "/home/ec2-user/NumberGuessGame-team8"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Benny25-tech/NumberGuessGame-team8.git'
-            }
-        }
-
-        stage('Build with Maven') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-
-        stage('Setup and Deploy on Node 1') {
-            agent { label 'node1' } // Runs only on Node 1
-            steps {
                 script {
                     sh '''
-                    #!/bin/bash
                     echo "Checking if Git is installed on Node 1..."
                     if ! command -v git &> /dev/null
                     then
@@ -36,7 +23,37 @@ pipeline {
                         echo "Git is already installed."
                     fi
                     git --version
+                    
+                    echo "Cloning Repository..."
+                    if [ -d "${REPO_DIR}" ]; then
+                        cd ${REPO_DIR}
+                        git pull origin master
+                    else
+                        git clone https://github.com/Benny25-tech/NumberGuessGame-team8.git ${REPO_DIR}
+                    fi
+                    cd ${REPO_DIR}
+                    '''
+                }
+            }
+        }
 
+        stage('Build with Maven') {
+            steps {
+                script {
+                    sh '''
+                    cd ${REPO_DIR}
+                    mvn clean package
+                    '''
+                }
+            }
+        }
+
+        stage('Setup and Deploy on Node 1') {
+            agent { label 'node1' } // Runs only on Node 1
+            steps {
+                script {
+                    sh '''
+                    #!/bin/bash
                     echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17-openjdk
 
@@ -54,7 +71,7 @@ pipeline {
                     
                     echo "Deploying WAR file..."
                     sudo rm -rf ${TOMCAT_HOME}/webapps/ROOT*
-                    sudo cp ${JENKINS_WORKSPACE}/${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
+                    sudo cp ${WAR_FILE} ${TOMCAT_HOME}/webapps/ROOT.war
 
                     echo "Restarting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
