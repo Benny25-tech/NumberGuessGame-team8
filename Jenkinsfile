@@ -53,7 +53,7 @@ pipeline {
                     // Deploy WAR file to Tomcat webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER}'
                             sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/shutdown.sh
                             # Remove old WAR file if it exists
                             if [ -f /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE}) ]; then
