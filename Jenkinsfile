@@ -32,12 +32,12 @@ pipeline {
                     // SSH into deployment server and install Java and Tomcat (if needed)
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@\${DEPLOYMENT_SERVER} '
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo yum -y install java-17
                             cd /tmp
-                            sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v\${TOMCAT_VERSION}/bin/apache-tomcat-\${TOMCAT_VERSION}.tar.gz
-                            sudo tar xvf apache-tomcat-\${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
-                            sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}
+                            sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
+                            sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
+                            sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
@@ -54,15 +54,16 @@ pipeline {
                     // Deploy WAR file to Tomcat webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@\${DEPLOYMENT_SERVER} '
-                            sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/shutdown.sh
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
                             # Remove old WAR file if it exists
-                            if [ -f /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/\$(basename \${WAR_FILE}) ]; then
+                            WAR_NAME=$(basename ${WORKSPACE}/${WAR_FILE})
+                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/\${WAR_NAME} ]; then
                                 echo "Removing old WAR file"
-                                sudo rm -f /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/\$(basename \${WAR_FILE})
+                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/\${WAR_NAME}
                             fi
-                            mv \${WORKSPACE}/\${WAR_FILE} /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/
-                            sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/startup.sh
+                            mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
                     }
