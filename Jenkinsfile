@@ -19,8 +19,7 @@ pipeline {
             }
         }
 
-        stage('Install Java and SonarQube on SonarQube Node') {
-            agent { label 'sonarqube-node' }  // This instructs Jenkins to run the stage on the SonarQube node
+        stage('Install Java and SonarQube') {
             steps {
                 script {
                     sh """
@@ -38,6 +37,15 @@ pipeline {
                     ${SONARQUBE_HOME}/bin/linux-x86-64/sonar.sh status
                     sudo netstat -ntpl | grep 9000
                     """
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Run SonarQube analysis using Maven
+                    sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=your_project_key -Dsonar.host.url=http://localhost:9000'
                 }
             }
         }
