@@ -4,9 +4,12 @@ pipeline {
     environment {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
-        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // Path to the exact WAR file
-        DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
-        SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
+        WAR_NAME = "NumberGuessGame-2.0-SNAPSHOT.war"
+        WAR_FILE = "target/${WAR_NAME}"
+        DEPLOYMENT_SERVER = "172.31.7.34"
+        SSH_CREDENTIALS = "Node1"
+        SONARQUBE_VERSION = "6.7.7"
+        SONARQUBE_HOME = "/home/ec2-user/sonarqube-${SONARQUBE_VERSION}"
     }
 
     stages {
@@ -16,32 +19,34 @@ pipeline {
             }
         }
 
-        stage('Build with Maven') {
+        stage('Install Java and SonarQube on SonarQube Node') {
+            agent { label 'sonarqube-node' }  // This instructs Jenkins to run the stage on the SonarQube node
             steps {
                 script {
-                    // Run Maven build and ensure WAR file is created
-                    sh 'mvn clean package'
-                    stash name: 'warFile', includes: WAR_FILE  // Stash the specific WAR file
+                    sh """
+                    sudo yum -y install java-17
+                    sudo alternatives --config java
+                    
+                    # Install SonarQube
+                    cd /tmp
+                    wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
+                    unzip sonarqube-${SONARQUBE_VERSION}.zip -d /home/ec2-user/
+                    sudo chown -R ec2-user:ec2-user ${SONARQUBE_HOME}
+                    ${SONARQUBE_HOME}/bin/linux-x86-64/sonar.sh start
+                    
+                    # Verify SonarQube status
+                    ${SONARQUBE_HOME}/bin/linux-x86-64/sonar.sh status
+                    sudo netstat -ntpl | grep 9000
+                    """
                 }
             }
         }
 
-        stage('Install Java and Tomcat on Deployment Server') {
+        stage('Build with Maven') {
             steps {
                 script {
-                    // SSH into deployment server and install Java and Tomcat (if needed)
-                    sshagent(credentials: [SSH_CREDENTIALS]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
-                            sudo yum -y install java-17
-                            cd /tmp
-                            sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
-                            sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
-                            sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
-                        '
-                        """
-                    }
+                    sh 'mvn clean package'
+                    stash name: 'warFile', includes: WAR_FILE
                 }
             }
         }
@@ -49,21 +54,30 @@ pipeline {
         stage('Deploy to Tomcat') {
             steps {
                 script {
-                    unstash 'warFile'  // Retrieve the WAR file from the stash
-
-                    // Use SCP to transfer the WAR file from Jenkins to Tomcat server
+                    unstash 'warFile'
+                    
+                    sshagent(credentials: [SSH_CREDENTIALS]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
+                            if [ -f ${TOMCAT_HOME}/webapps/${WAR_NAME} ]; then
+                                echo "Removing old WAR file"
+                                sudo rm -f ${TOMCAT_HOME}/webapps/${WAR_NAME}
+                            fi
+                        '
+                        """
+                    }
+                    
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         scp -o StrictHostKeyChecking=no ${WORKSPACE}/${WAR_FILE} ec2-user@${DEPLOYMENT_SERVER}:${TOMCAT_HOME}/webapps/
                         """
                     }
-
-                    // Restart Tomcat on the deployment server
+                    
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
+                            sudo ${TOMCAT_HOME}/bin/shutdown.sh
+                            sudo ${TOMCAT_HOME}/bin/startup.sh
                         '
                         """
                     }
