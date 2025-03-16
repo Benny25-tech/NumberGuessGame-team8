@@ -8,6 +8,7 @@ pipeline {
         WAR_FILE = "target/${WAR_NAME}"
         DEPLOYMENT_SERVER = "172.31.7.34"
         SSH_CREDENTIALS = "Node1"  
+    }
 
     stages {
         stage('Checkout Code') {
