@@ -60,7 +60,7 @@ pipeline {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
                     // Clean the Tomcat webapps directory
-                    sh 'ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} "rm -rf /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/*"'
+                    sh 'ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} " sudo rm -rf /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/*"'
                     // Use SCP to transfer the WAR file from Jenkins to Tomcat server
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
