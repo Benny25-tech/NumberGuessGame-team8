@@ -51,20 +51,12 @@ pipeline {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
 
-                    // SSH into Tomcat server and deploy the WAR file
+                    // Deploy WAR file to Tomcat webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
-                            # Shut down Tomcat
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
-
-                            # Remove old versions of the WAR file in the Tomcat webapps directory, if any
-                            sudo rm -rf /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/NumberGuessGame-1.0-SNAPSHOT*
-
-                            # Copy the new WAR file to the webapps directory
-                            scp /home/jenkins/workspace/NumberGuessGame-team8/target/NumberGuessGame-1.0-SNAPSHOT.war ec2-user@${DEPLOYMENT_SERVER}:/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
-
-                            # Start Tomcat again
+                            mv target/*.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
