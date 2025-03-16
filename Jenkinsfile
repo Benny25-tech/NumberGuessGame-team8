@@ -34,7 +34,6 @@ pipeline {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo yum -y install java-17
-                            cd /tmp
                             sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
                             sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
                             sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}
@@ -55,14 +54,14 @@ pipeline {
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
+                            sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/shutdown.sh
                             # Remove old WAR file if it exists
-                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE}) ]; then
+                            if [ -f /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE}) ]; then
                                 echo "Removing old WAR file"
-                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE})
+                                sudo rm -f /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE})
                             fi
-                            mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
+                            mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/webapps/
+                            sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
                     }
