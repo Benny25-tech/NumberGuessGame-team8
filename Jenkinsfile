@@ -65,8 +65,7 @@ pipeline {
                             fi
 
                             # Copy the new WAR file to the Tomcat webapps directory
-                            sudo mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
-
+                            sudo mv target/NumberGuessGame-1.0-SNAPSHOT.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
                             # Start Tomcat server
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
