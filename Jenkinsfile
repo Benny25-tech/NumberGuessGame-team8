@@ -4,7 +4,7 @@ pipeline {
     environment {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
-        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // Path to the exact WAR file
+        WAR_FILE = "target/NumberGuessGame-2.0-SNAPSHOT.war"  // Path to the exact WAR file
         DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
         SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
     }
