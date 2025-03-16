@@ -21,7 +21,7 @@ pipeline {
                 script {
                     // Run Maven build and ensure WAR file is created
                     sh 'mvn clean package'
-                    stash name: 'warFile', includes: '**/target/*.war'  // Stash the WAR file for later use
+                    stash name: 'warFile', includes: 'target/NumberGuessGame-1.0-SNAPSHOT.war'  // Stash the WAR file with the exact name
                 }
             }
         }
@@ -56,7 +56,7 @@ pipeline {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
-                            mv target/*.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+                            mv target/NumberGuessGame-1.0-SNAPSHOT.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
