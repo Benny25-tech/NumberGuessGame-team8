@@ -5,6 +5,9 @@ pipeline {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
         WAR_DIRECTORY = "${TOMCAT_HOME}/webapps"
+        TOMCAT_SERVER = "172.31.7.34"  // Private IP of your Tomcat server
+        SSH_KEY = "Excel.pem"  // Your SSH key file
+        SSH_USER = "ec2-user"  // EC2 user
     }
 
     stages {
@@ -17,31 +20,28 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    // Run Maven build and ensure WAR file is created
                     sh 'mvn clean package'
-                    stash name: 'warFile', includes: 'target/*.war' // Stash the WAR file for later use
+                    stash name: 'warFile', includes: 'target/*.war'
                 }
             }
         }
 
-        stage('Setup and Deploy on Node 1') {
-            agent { label 'node1' }
+        stage('Setup and Deploy on Node 2 (Tomcat Server)') {
+            agent { label 'node2' }
             steps {
                 script {
                     sh '''
-                    #!/bin/bash
-
-                    echo "Installing Java 17 on Node 1..."
+                    echo "Installing Java 17 on Node 2..."
                     sudo yum -y install java-17
 
                     echo "Downloading Tomcat ${TOMCAT_VERSION}..."
                     cd /tmp
-                    sudo wget -q https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
+                    wget -q https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
 
                     echo "Extracting Tomcat..."
                     sudo mkdir -p ${TOMCAT_HOME}
                     sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
-                    sh'''
+                    '''
                 }
             }
         }
@@ -49,17 +49,17 @@ pipeline {
         stage('Deploy to Tomcat') {
             steps {
                 script {
-                    unstash 'warFile'  // Retrieve the WAR file from the stash
+                    unstash 'warFile'
 
                     sh '''
-                    # Move WAR file to Tomcat webapps directory
-                    echo "Moving WAR file to Tomcat webapps directory"
-                    # Change ownership of Tomcat webapps directory to Jenkins user
-                    sudo chown -R Jenkins:ec2-user /home/ec2-user/apache-tomcat-7.0.94/webapps/
-                    mv target/*.war ${WAR_DIRECTORY}/
+                    echo "Copying WAR file to Tomcat server..."
+                    scp -i ${SSH_KEY} target/*.war ${SSH_USER}@${TOMCAT_SERVER}:${WAR_DIRECTORY}/
 
-                    # Start Tomcat again
-                    sudo ${TOMCAT_HOME}/bin/startup.sh
+                    echo "Changing ownership of webapps directory..."
+                    ssh -i ${SSH_KEY} ${SSH_USER}@${TOMCAT_SERVER} "sudo chown -R ec2-user:ec2-user ${WAR_DIRECTORY}"
+
+                    echo "Restarting Tomcat..."
+                    ssh -i ${SSH_KEY} ${SSH_USER}@${TOMCAT_SERVER} "sudo ${TOMCAT_HOME}/bin/shutdown.sh && sudo ${TOMCAT_HOME}/bin/startup.sh"
                     '''
                 }
             }
