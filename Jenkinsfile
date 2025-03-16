@@ -44,9 +44,6 @@ pipeline {
 
                     echo "Starting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
-
-                    # Change ownership of Tomcat directory to Jenkins user
-                    sudo chown -R ec2-user:ec2-user ${TOMCAT_HOME}/
                     '''
                 }
             }
