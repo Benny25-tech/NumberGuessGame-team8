@@ -56,12 +56,13 @@ pipeline {
 
                     sh '''
                     # Shutdown Tomcat to avoid conflicts
-                    sudo ${TOMCAT_HOME}/bin/shutdown.sh
+                    echo "" | sudo -S ${TOMCAT_HOME}/bin/shutdown.sh
 
                     echo "Deploying WAR file to Tomcat webapps directory"
                     mv target/*.war ${WAR_DIRECTORY}/
 
                     # Restart Tomcat
+                    echo "Starting Tomcat..."
                     sudo ${TOMCAT_HOME}/bin/startup.sh
                     '''
                 }
