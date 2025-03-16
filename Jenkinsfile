@@ -4,9 +4,9 @@ pipeline {
     environment {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
-        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // Path to the WAR file
-        DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
-        SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
+        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // WAR file built on Jenkins server
+        DEPLOYMENT_SERVER = "172.31.7.34"  // Tomcat (Deployment) server's private IP
+        SSH_CREDENTIALS = "Node1"  // SSH credentials ID for the deployment server
     }
 
     stages {
@@ -19,27 +19,20 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    // Run Maven build and ensure WAR file is created
                     sh 'mvn clean package'
-                    stash name: 'warFile', includes: WAR_FILE  // Stash the specific WAR file
+                    stash name: 'warFile', includes: WAR_FILE  // Stash WAR file
                 }
             }
         }
 
-        stage('Install Java and Tomcat on Deployment Server') {
+        stage('Transfer WAR File to Tomcat Server') {
             steps {
                 script {
-                    // SSH into deployment server and install Java and Tomcat (if needed)
+                    unstash 'warFile'  // Retrieve the WAR file from the stash
+                    
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
-                            sudo yum -y install java-17
-                            cd /tmp
-                            sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
-                            sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
-                            sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}
-                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
-                        '
+                        scp -o StrictHostKeyChecking=no ${WAR_FILE} ec2-user@${DEPLOYMENT_SERVER}:/home/ec2-user/
                         """
                     }
                 }
@@ -49,25 +42,20 @@ pipeline {
         stage('Deploy to Tomcat') {
             steps {
                 script {
-                    unstash 'warFile'  // Retrieve the WAR file from the stash
-
-                    // Ensure WAR_NAME is defined before using it
-                    def WAR_NAME = sh(script: "basename ${WAR_FILE}", returnStdout: true).trim()
-
-                    // Deploy WAR file to Tomcat webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
                             
-                            # Check if the WAR file exists and remove old WAR file if it exists
-                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/${WAR_NAME} ]; then
+                            # Remove old WAR file if it exists
+                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/NumberGuessGame-1.0-SNAPSHOT.war ]; then
                                 echo "Removing old WAR file"
-                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/${WAR_NAME}
+                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/NumberGuessGame-1.0-SNAPSHOT.war
                             fi
 
-                            # Copy the new WAR file to the Tomcat webapps directory
-                            sudo mv target/NumberGuessGame-1.0-SNAPSHOT.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+                            # Move the new WAR file into Tomcat's webapps directory
+                            sudo mv /home/ec2-user/NumberGuessGame-1.0-SNAPSHOT.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+
                             # Start Tomcat server
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
