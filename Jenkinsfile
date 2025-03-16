@@ -25,6 +25,7 @@ pipeline {
                 }
             }
         }
+
         stage('Run Unit Tests') {
             steps {
                 script {
@@ -33,7 +34,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Install Java and Tomcat on Deployment Server') {
             steps {
@@ -59,11 +59,12 @@ pipeline {
             steps {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
-
+                    // Clean the Tomcat webapps directory
+                    sh 'ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} "rm -rf /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/*"'
                     // Use SCP to transfer the WAR file from Jenkins to Tomcat server
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
-                        scp -o StrictHostKeyChecking=no ${WORKSPACE}/${WAR_FILE} ec2-user@${DEPLOYMENT_SERVER}:${TOMCAT_HOME}/webapps/
+                        scp -v -o StrictHostKeyChecking=no ${WORKSPACE}/${WAR_FILE} ec2-user@${DEPLOYMENT_SERVER}:${TOMCAT_HOME}/webapps/
                         """
                     }
 
