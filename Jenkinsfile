@@ -26,12 +26,12 @@ pipeline {
             }
         }
 
-        stage('Setup and Deploy on Node 2 (Tomcat Server)') {
-            agent { label 'node2' }
+        stage('Setup and Deploy on Node 1 (Tomcat Server)') {
+            agent { label 'node1' }
             steps {
                 script {
                     sh '''
-                    echo "Installing Java 17 on Node 2..."
+                    echo "Installing Java 17 on Node 1..."
                     sudo yum -y install java-17
 
                     echo "Downloading Tomcat ${TOMCAT_VERSION}..."
