@@ -5,6 +5,8 @@ pipeline {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
         WAR_DIRECTORY = "${TOMCAT_HOME}/webapps"
+        DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
+        SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
     }
 
     stages {
@@ -24,27 +26,22 @@ pipeline {
             }
         }
 
-        stage('Install Tomcat on Node 1') {
-            agent { label 'node1' }
+        stage('Install Java and Tomcat on Deployment Server') {
             steps {
                 script {
-                    sh '''
-                    #!/bin/bash
-
-                    echo "Installing Java 17 on Node 1..."
-                    sudo yum -y install java-17
-
-                    echo "Downloading Tomcat ${TOMCAT_VERSION}..."
-                    cd /tmp
-                    sudo wget -q https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
-
-                    echo "Extracting Tomcat..."
-                    sudo mkdir -p ${TOMCAT_HOME}
-                    sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C ${TOMCAT_HOME} --strip-components=1
-
-                    echo "Starting Tomcat..."
-                    sudo ${TOMCAT_HOME}/bin/startup.sh
-                    '''
+                    // SSH into deployment server and install Java and Tomcat (if needed)
+                    sshagent(credentials: [SSH_CREDENTIALS]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
+                            sudo yum -y install java-17
+                            cd /tmp
+                            sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
+                            sudo tar xvf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
+                            sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
+                        '
+                        """
+                    }
                 }
             }
         }
@@ -54,17 +51,16 @@ pipeline {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
 
-                    sh '''
-                    # Shutdown Tomcat to avoid conflicts
-                    echo "" | sudo -S ${TOMCAT_HOME}/bin/shutdown.sh
-
-                    echo "Deploying WAR file to Tomcat webapps directory"
-                    mv target/*.war ${WAR_DIRECTORY}/
-
-                    # Restart Tomcat
-                    echo "Starting Tomcat..."
-                    sudo ${TOMCAT_HOME}/bin/startup.sh
-                    '''
+                    // Deploy WAR file to Tomcat webapps directory
+                    sshagent(credentials: [SSH_CREDENTIALS]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
+                            mv target/*.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
+                        '
+                        """
+                    }
                 }
             }
         }
