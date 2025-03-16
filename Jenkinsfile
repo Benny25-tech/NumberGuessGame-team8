@@ -56,6 +56,11 @@ pipeline {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
+                            # Remove old WAR file if it exists
+                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE}) ]; then
+                                echo "Removing old WAR file"
+                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/$(basename ${WAR_FILE})
+                            fi
                             mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
