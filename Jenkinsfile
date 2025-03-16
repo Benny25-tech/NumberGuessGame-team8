@@ -4,7 +4,7 @@ pipeline {
     environment {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
-        WAR_FILE = "target/NumberGuessGame-2.0-SNAPSHOT.war"  // Path to the exact WAR file
+        WAR_DIRECTORY = "${TOMCAT_HOME}/webapps"
         DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
         SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
     }
@@ -19,9 +19,9 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    // Run Maven build and ensure WAR file is created
+                    // Run Maven build to ensure the WAR file is created
                     sh 'mvn clean package'
-                    stash name: 'warFile', includes: WAR_FILE  // Stash the specific WAR file
+                    stash name: 'warFile', includes: '**/target/*.war'  // Stash the WAR file for later use
                 }
             }
         }
@@ -38,7 +38,7 @@ pipeline {
         stage('Install Java and Tomcat on Deployment Server') {
             steps {
                 script {
-                    // SSH into deployment server and install Java and Tomcat (if needed)
+                    // SSH into the deployment server to install Java and Tomcat (if needed)
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
@@ -59,20 +59,13 @@ pipeline {
             steps {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
-                    // Clean the Tomcat webapps directory
-                    sh 'ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} " sudo rm -rf /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/*"'
-                    // Use SCP to transfer the WAR file from Jenkins to Tomcat server
-                    sshagent(credentials: [SSH_CREDENTIALS]) {
-                        sh """
-                        scp -v -o StrictHostKeyChecking=no ${WORKSPACE}/${WAR_FILE} ec2-user@${DEPLOYMENT_SERVER}:${TOMCAT_HOME}/webapps/
-                        """
-                    }
 
-                    // Restart Tomcat on the deployment server
+                    // Deploy WAR file to Tomcat's webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
+                            mv target/NumberGuessGame-1.0-SNAPSHOT.war /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
