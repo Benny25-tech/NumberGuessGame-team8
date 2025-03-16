@@ -4,7 +4,7 @@ pipeline {
     environment {
         TOMCAT_VERSION = "7.0.94"
         TOMCAT_HOME = "/home/ec2-user/apache-tomcat-${TOMCAT_VERSION}"
-        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // Path to the exact WAR file
+        WAR_FILE = "target/NumberGuessGame-1.0-SNAPSHOT.war"  // Path to the WAR file
         DEPLOYMENT_SERVER = "172.31.7.34"  // Deployment server's private IP address
         SSH_CREDENTIALS = "Node1"  // ID of the SSH credentials for the deployment server
     }
@@ -50,19 +50,24 @@ pipeline {
             steps {
                 script {
                     unstash 'warFile'  // Retrieve the WAR file from the stash
+                    WAR_NAME = sh(script: "basename ${WAR_FILE}", returnStdout: true).trim()
 
                     // Deploy WAR file to Tomcat webapps directory
                     sshagent(credentials: [SSH_CREDENTIALS]) {
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${DEPLOYMENT_SERVER} '
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/shutdown.sh
-                            # Remove old WAR file if it exists
-                            WAR_NAME=\$(basename ${WORKSPACE}/${WAR_FILE})
-                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/\${WAR_NAME} ]; then
+                            
+                            # Check if the WAR file exists and remove old WAR file if it exists
+                            if [ -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/${WAR_NAME} ]; then
                                 echo "Removing old WAR file"
-                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/\${WAR_NAME}
+                                sudo rm -f /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/${WAR_NAME}
                             fi
-                            mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+
+                            # Copy the new WAR file to the Tomcat webapps directory
+                            sudo mv ${WORKSPACE}/${WAR_FILE} /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/webapps/
+
+                            # Start Tomcat server
                             sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
