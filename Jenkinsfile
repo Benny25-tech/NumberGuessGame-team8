@@ -7,46 +7,12 @@ pipeline {
         WAR_NAME = "NumberGuessGame-2.0-SNAPSHOT.war"
         WAR_FILE = "target/${WAR_NAME}"
         DEPLOYMENT_SERVER = "172.31.7.34"
-        SSH_CREDENTIALS = "Node1"
-        SONARQUBE_VERSION = "6.7.7"
-        SONARQUBE_HOME = "/home/ec2-user/sonarqube-${SONARQUBE_VERSION}"
-    }
+        SSH_CREDENTIALS = "Node1"  
 
     stages {
         stage('Checkout Code') {
             steps {
                 git 'https://github.com/Benny25-tech/NumberGuessGame-team8.git'
-            }
-        }
-
-        stage('Install Java and SonarQube') {
-            steps {
-                script {
-                    sh """
-                    sudo yum -y install java-17
-                    sudo alternatives --config java
-                    
-                    # Install SonarQube
-                    cd /tmp
-                    wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-${SONARQUBE_VERSION}.zip
-                    unzip sonarqube-${SONARQUBE_VERSION}.zip -d /home/ec2-user/
-                    sudo chown -R ec2-user:ec2-user ${SONARQUBE_HOME}
-                    ${SONARQUBE_HOME}/bin/linux-x86-64/sonar.sh start
-                    
-                    # Verify SonarQube status
-                    ${SONARQUBE_HOME}/bin/linux-x86-64/sonar.sh status
-                    sudo netstat -ntpl | grep 9000
-                    """
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    // Run SonarQube analysis using Maven
-                    sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=your_project_key -Dsonar.host.url=http://localhost:9000'
-                }
             }
         }
 
