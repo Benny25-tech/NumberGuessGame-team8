@@ -38,7 +38,7 @@ pipeline {
                             sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v\${TOMCAT_VERSION}/bin/apache-tomcat-\${TOMCAT_VERSION}.tar.gz
                             sudo tar xvf apache-tomcat-\${TOMCAT_VERSION}.tar.gz -C /home/ec2-user/
                             sudo chown -R ec2-user:ec2-user /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}
-                            sudo /home/ec2-user/apache-tomcat-\${TOMCAT_VERSION}/bin/startup.sh
+                            sudo /home/ec2-user/apache-tomcat-${TOMCAT_VERSION}/bin/startup.sh
                         '
                         """
                     }
